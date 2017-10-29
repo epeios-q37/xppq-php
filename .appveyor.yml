@@ -1,0 +1,83 @@
+environment:
+  version: 20171029
+  affix: xppq
+  ext: dll
+  dir: $(affix)-php-v$(version)
+  zip: $(affix)znd-v$(version)-win-$(platform).zip  
+
+platform:
+# By default, it's the AMD64(/x64) version of PHP which is installed.
+# Have to search how to change this.
+# - x86
+- x64
+
+configuration: Release
+
+os :
+# - Visual Studio 2017
+- Visual Studio 2015
+# - Visual Studio 2013
+
+# https://help.appveyor.com/discussions/problems/5616-not-able-to-build-due-to-problem-in-chocolateyinstallps1#comment_41949965
+install: 
+- ps: Set-Service wuauserv -StartupType Manual
+- cinst -y php
+
+before_build:
+- echo %APPVEYOR_PROJECT_NAME%
+# Retrieving, building and testing 'ZNDq'.
+- git clone https://github.com/epeios-q37/zndq.git
+- cd zndq
+# To maintainer : content of this section is very similar to the one in 'zndq.appveyor.yml'.
+- call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
+- call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
+- dir
+- dir C:\tools\php71
+- dir C:\tools\php71\dev
+- curl -L https://github.com/php/php-src/archive/php-7.1.10.tar.gz --output php.tgz
+- 7z x php.tgz
+- 7z x php.tar
+- cd php-src-php-7.1.10
+- buildconf.bat --add-modules-dir=c:\projects\%APPVEYOR_PROJECT_NAME%\zndq
+- configure.bat
+# We do not build from the source (no 'nmake'), as we use the already installed PHP binaries.
+# 'buildconf.bat' and 'configure.bat' are only launched to generate some files needed
+# to compile the extension (namely 'main/config.w32.h').
+- dir
+- cd ..
+- msbuild zndq.vcxproj
+- echo "***** 'ZNDq' TEST BEGIN *****" && C:\tools\php71\php -dextension=./zndq.dll test.php && echo "***** 'ZNDq' TEST END *****"
+# 'Installing' 'ZNDq'.
+- copy zndq.dll ..
+- copy zndq.xcfg ..
+- copy zndq.xlcl ..
+- cd ..
+
+test_script:
+- echo "***** 'XPPq' TEST BEGIN *****" && C:\tools\php71\php -dextension=./zndq.dll test.php && echo "***** 'XPPq' TEST END *****"
+
+# matrix:
+  # allow_failures:
+  # - os: Visual Studio 2017
+  
+skip_tags: true  
+  
+after_build:
+- mkdir %dir% || exit 1
+- copy %affix%znd.%ext% %dir%\%affix%znd_%platform%.%ext% || exit 1
+- 7z a %zip% %dir%
+
+artifacts:
+- path: '*.zip'
+
+deploy:
+  tag: v$(version)
+  description: ''
+  provider: GitHub
+  auth_token:
+    secure: kKebvPLjikQbZ7E1Vm8omoYc9K0wOcKxjWsglp3+D4fV9ev/FaWr8ZBI+AseOTis
+  draft: false
+  prerelease: false
+  on:
+   APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+
