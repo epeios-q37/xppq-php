@@ -34,22 +34,7 @@ $XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" .
 "  <xpp:expand select=\"SomeMacro\"/>\n" .
 " </YetAnotherTag>\n" .
 "</SomeTag>\n"
- ;
-
-/*
-function f( &$text )
-{
-	$text = $text . " the world";
-}
-
- $test= "Hello";
-
-	echo $test . " !" . "\n";
-
-	f( $test );
-
-	echo $test . " !" . "\n";
-*/
+;
 
 function parse($stream) {
 	$parser = XPPq::parserNew($stream);
